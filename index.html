@@ -3,96 +3,198 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Walkie-Talkie</title>
+    <title>Walkie-Talkie Pro</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root { --case: #1a1a1a; --screen-bg: #0a0f0a; --green: #39ff14; --red: #d32f2f; }
-        body { background: #e0e0e0; font-family: 'Courier New', monospace; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
+        :root {
+            --body-bg: #f0f0f0;
+            --case-bg: #222222;
+            --lcd-bg: #0d120d;
+            --lcd-text: #46f046;
+            --btn-red: #cc0000;
+            --btn-red-glow: #ff3333;
+        }
+
+        body {
+            background-color: var(--body-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Inter', -apple-system, sans-serif;
+        }
 
         /* SJÄLVA ENHETEN */
-        .device { width: 340px; background: var(--case); padding: 30px; border-radius: 40px; box-shadow: 20px 20px 60px #bebebe, inset 2px 2px 5px #444; border: 4px solid #333; position: relative; }
+        .walkie-talkie {
+            width: 320px;
+            background: var(--case-bg);
+            border-radius: 45px;
+            padding: 30px;
+            box-shadow: 25px 25px 50px #d1d1d1, -10px -10px 30px #ffffff;
+            position: relative;
+            border: 1px solid #111;
+        }
 
-        /* RETRO-SKÄRM */
-        .lcd { background: var(--screen-bg); border: 4px solid #222; border-radius: 10px; padding: 15px; height: 100px; color: var(--green); font-size: 0.8rem; text-shadow: 0 0 5px var(--green); overflow: hidden; margin-bottom: 20px; box-shadow: inset 0 0 10px #000; }
-        .lcd-label { font-size: 0.6rem; text-transform: uppercase; margin-bottom: 5px; opacity: 0.7; }
+        /* GRÅA SIDOKNAPPAR/PUNKT-DEKORATION */
+        .side-dot {
+            width: 14px;
+            height: 14px;
+            background: #e0e0e0;
+            border-radius: 50%;
+            position: absolute;
+            left: 25px;
+            box-shadow: inset 1px 1px 3px rgba(0,0,0,0.5);
+        }
+        .dot-top { top: 60px; }
+        .dot-mid { top: 180px; }
 
-        /* DEKORATIONER (HÅL OCH KNAPPAR) */
-        .deco-dots { display: grid; grid-template-columns: repeat(3, 8px); gap: 5px; margin-bottom: 10px; }
-        .dot { width: 8px; height: 8px; background: #333; border-radius: 50%; box-shadow: inset 1px 1px 2px #000; }
+        /* HÖGTALARGRILL (Små hål) */
+        .speaker-grill {
+            display: grid;
+            grid-template-columns: repeat(4, 6px);
+            gap: 6px;
+            position: absolute;
+            left: 50px;
+        }
+        .grill-top { top: 90px; }
+        .grill-main { top: 210px; grid-template-columns: repeat(5, 6px); }
+        .hole { width: 5px; height: 5px; background: #111; border-radius: 50%; box-shadow: inset 0 1px 1px #000; }
 
-        /* KONTAKTLISTA */
-        .contact-area { background: #222; border-radius: 10px; padding: 10px; max-height: 100px; overflow-y: auto; margin-bottom: 15px; border: 1px solid #444; }
-        .contact { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #333; color: #aaa; cursor: pointer; font-size: 0.7rem; }
-        .contact.selected { color: var(--green); background: #2a2a2a; }
-        .ring-btn { background: none; border: 1px solid var(--green); color: var(--green); font-size: 0.6rem; padding: 2px 5px; cursor: pointer; border-radius: 3px; }
+        /* LCD SKÄRM */
+        .screen {
+            background: var(--lcd-bg);
+            margin: 20px 0 20px 40px;
+            border-radius: 12px;
+            padding: 15px;
+            height: 110px;
+            border: 4px solid #1a1a1a;
+            color: var(--lcd-text);
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            box-shadow: inset 0 0 15px #000;
+            overflow: hidden;
+            line-height: 1.4;
+        }
+
+        .screen-line { margin-bottom: 4px; overflow: hidden; white-space: nowrap; border-right: 2px solid transparent; }
+
+        /* KONTAKTHANTERING INNE PÅ SKÄRMEN */
+        .contact-ui { margin-top: 10px; display: flex; gap: 4px; }
+        .contact-ui input { background: #1a1a1a; border: 1px solid #333; color: var(--lcd-text); font-size: 0.6rem; padding: 3px; width: 40%; outline: none; }
+        .contact-ui button { background: #333; color: white; border: none; font-size: 0.7rem; cursor: pointer; border-radius: 3px; }
 
         /* DEN STORA RÖDA KNAPPEN */
-        .btn-talk { 
-            width: 110px; height: 110px; background: radial-gradient(circle, #ff5252 0%, #b71c1c 100%); 
-            border-radius: 50%; border: 6px solid #4a0000; cursor: pointer; margin: 0 auto;
-            display: flex; align-items: center; justify-content: center; color: white;
-            font-weight: bold; font-size: 1.2rem; box-shadow: 0 8px 0 #5a0000, 0 10px 20px rgba(0,0,0,0.5);
-            transition: all 0.1s; user-select: none; -webkit-tap-highlight-color: transparent;
+        .talk-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+            margin-right: 10px;
         }
-        .btn-talk:active, .btn-talk.active { transform: translateY(4px); box-shadow: 0 2px 0 #5a0000; background: radial-gradient(circle, #4caf50 0%, #1b5e20 100%); border-color: #0d3d11; }
 
-        /* INPUTS */
-        .controls { display: flex; gap: 5px; margin-top: 10px; }
-        input { background: #222; border: 1px solid #444; color: var(--green); padding: 5px; font-size: 0.7rem; border-radius: 4px; width: 40%; }
-        .add-btn { background: #444; border: none; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .btn-talk {
+            width: 110px;
+            height: 110px;
+            background: radial-gradient(circle, var(--btn-red-glow) 0%, var(--btn-red) 100%);
+            border-radius: 50%;
+            border: 8px solid #000;
+            color: white;
+            font-weight: 900;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4), inset 0 4px 6px rgba(255,255,255,0.3);
+            transition: all 0.1s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-        .setup-btn { width: 100%; background: var(--green); color: black; border: none; padding: 10px; font-weight: bold; border-radius: 5px; cursor: pointer; margin-bottom: 10px; }
+        .btn-talk:active, .btn-talk.active {
+            transform: scale(0.95);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+            background: radial-gradient(circle, #39ff14 0%, #1a8a2a 100%);
+        }
+
+        /* TEXT UNDER ENHETEN */
+        .footer-text {
+            margin-top: 40px;
+            text-align: center;
+            color: #333;
+        }
+        .footer-text h2 { font-family: monospace; letter-spacing: 4px; font-size: 1.8rem; margin-bottom: 5px; }
+        .footer-text p { font-size: 0.9rem; color: #666; }
+
+        .init-overlay {
+            width: 100%; height: 100%; background: var(--green); color: black; font-weight: bold; border-radius: 10px; cursor: pointer; border: none; margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
 
-<div class="device">
-    <button class="setup-btn" id="initBtn">ANSLUT SYSTEMET</button>
-    
-    <div class="lcd">
-        <div class="lcd-label">Status Monitor</div>
-        <div id="stName">OFFLINE</div>
-        <div id="stAction">Väntar på initiering...</div>
-        <div id="stCode" style="margin-top: 5px; font-size: 0.6rem; opacity: 0.8;">ID: ------</div>
+    <div class="walkie-talkie">
+        <div class="side-dot dot-top"></div>
+        <div class="side-dot dot-mid"></div>
+
+        <div class="speaker-grill grill-top">
+            <div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div>
+            <div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div>
+        </div>
+
+        <div class="screen">
+            <button id="initBtn" style="width:100%; background:var(--lcd-text); color:black; border:none; font-weight:bold; cursor:pointer; font-size:0.7rem; padding:2px;">ANSLUT SYSTEM</button>
+            <div id="stDisplay">
+                <div class="screen-line">STATUS: <span id="stStatus">OFFLINE</span></div>
+                <div class="screen-line">ID: <span id="stMyCode">------</span></div>
+                <div class="screen-line">TARGET: <span id="stTarget">NONE</span></div>
+            </div>
+            <div class="contact-ui">
+                <input type="text" id="n" placeholder="Namn">
+                <input type="number" id="c" placeholder="Kod">
+                <button onclick="addFriend()">ADD</button>
+            </div>
+            <div id="miniList" style="font-size: 0.55rem; margin-top: 5px; opacity: 0.7; height: 20px; overflow: hidden;"></div>
+        </div>
+
+        <div class="speaker-grill grill-main">
+            <div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div>
+            <div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div>
+            <div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div>
+        </div>
+
+        <div class="talk-container">
+            <div class="btn-talk" id="talkBtn">BTALK</div>
+        </div>
     </div>
 
-    <div class="deco-dots">
-        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-        <div class="dot"></div><div class="dot" style="background: #555;"></div><div class="dot"></div>
+    <div class="footer-text">
+        <h2>WALKIE-TALKIE</h2>
+        <p>Instant tap-to-talk communication.</p>
     </div>
-
-    <div class="contact-area" id="list"></div>
-
-    <div class="controls">
-        <input type="text" id="n" placeholder="Namn">
-        <input type="number" id="c" placeholder="Kod">
-        <button class="add-btn" onclick="addFriend()">+</button>
-    </div>
-
-    <div class="btn-talk" id="talkBtn">TALA</div>
-    <p style="color: #555; font-size: 0.5rem; text-align: center; margin-top: 10px;">WALKIE-TALKIE MODEL V1</p>
-</div>
 
 <script>
     let myStream, peer, selectedId, dataConn;
-    const stName = document.getElementById('stName');
-    const stAction = document.getElementById('stAction');
+    const stStatus = document.getElementById('stStatus');
+    const stMyCode = document.getElementById('stMyCode');
+    const stTarget = document.getElementById('stTarget');
     const talkBtn = document.getElementById('talkBtn');
 
     let myCode = localStorage.getItem('wt_c') || Math.floor(100000 + Math.random() * 900000).toString();
     localStorage.setItem('wt_c', myCode);
-    document.getElementById('stCode').innerText = "DIN KOD: " + myCode;
+    stMyCode.innerText = myCode;
 
     document.getElementById('initBtn').onclick = async function() {
         try {
             myStream = await navigator.mediaDevices.getUserMedia({ audio: true });
             if ("Notification" in window) Notification.requestPermission();
             this.style.display = "none";
-            stName.innerText = "SYSTEM ONLINE";
-            stAction.innerText = "Välj mottagare";
+            stStatus.innerText = "ONLINE";
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             ctx.resume();
-        } catch (e) { alert("Mic-fel: " + e); }
+        } catch (e) { alert("Mic saknas!"); }
     };
 
     peer = new Peer('live-' + myCode);
@@ -108,19 +210,11 @@
 
     peer.on('connection', conn => {
         conn.on('data', data => {
-            if (data.type === 'PING') {
-                if ("Notification" in window && Notification.permission === "granted") {
-                    new Notification("Walkie Talkie", { body: data.from + " anropar!" });
-                }
-                stName.innerText = "ANROP FRÅN:";
-                stAction.innerText = data.from.toUpperCase();
-                if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-            } else if (data.type === 'ON') {
-                stName.innerText = data.from.toUpperCase();
-                stAction.innerText = "SÄNDER LIVE...";
+            if (data.type === 'ON') {
+                stStatus.innerText = "INCOMING...";
+                stTarget.innerText = data.from.toUpperCase();
             } else {
-                stName.innerText = "SYSTEM ONLINE";
-                stAction.innerText = "Klar";
+                stStatus.innerText = "ONLINE";
             }
         });
     });
@@ -131,12 +225,14 @@
         peer.call('live-' + selectedId, myStream);
         dataConn = peer.connect('live-' + selectedId);
         dataConn.on('open', () => {
-            dataConn.send({type: 'ON', from: localStorage.getItem('wt_n') || 'Okänd'});
+            dataConn.send({type: 'ON', from: localStorage.getItem('wt_n') || 'USER'});
         });
+        stStatus.innerText = "SENDING...";
     }
 
     function stop() {
         talkBtn.classList.remove('active');
+        stStatus.innerText = "ONLINE";
         if(dataConn && dataConn.open) dataConn.send({type: 'OFF'});
         peer._connections.forEach(connList => {
             connList.forEach(c => { if(c.type === 'media') c.close(); });
@@ -148,43 +244,28 @@
     talkBtn.ontouchstart = (e) => { e.preventDefault(); start(); };
     talkBtn.ontouchend = stop;
 
-    function sendPing(id, name) {
-        const conn = peer.connect('live-' + id);
-        conn.on('open', () => {
-            conn.send({ type: 'PING', from: localStorage.getItem('wt_n') || "Vän" });
-            stAction.innerText = "SIGNAL SKICKAD";
-        });
-    }
-
     function addFriend() {
         const name = document.getElementById('n').value;
         const cid = document.getElementById('c').value;
         if(name && cid) {
-            let f = JSON.parse(localStorage.getItem('f_v4') || '[]');
+            let f = JSON.parse(localStorage.getItem('f_v5') || '[]');
             f.push({name, cid});
-            localStorage.setItem('f_v4', JSON.stringify(f));
+            localStorage.setItem('f_v5', JSON.stringify(f));
             render();
         }
     }
 
     function render() {
-        const l = document.getElementById('list');
-        l.innerHTML = "";
-        JSON.parse(localStorage.getItem('f_v4') || '[]').forEach(f => {
-            const d = document.createElement('div');
-            d.className = 'contact';
-            d.innerHTML = `<span>${f.name}</span> <button class="ring-btn" onclick="event.stopPropagation(); sendPing('${f.cid}', '${f.name}')">ANROP</button>`;
-            d.onclick = () => {
-                selectedId = f.cid;
-                document.querySelectorAll('.contact').forEach(c => c.classList.remove('selected'));
-                d.classList.add('selected');
-                if(!localStorage.getItem('wt_n')) localStorage.setItem('wt_n', prompt("Ditt namn?"));
-                stName.innerText = "VALD:";
-                stAction.innerText = f.name.toUpperCase();
-            };
-            l.appendChild(d);
-        });
+        const ml = document.getElementById('miniList');
+        const friends = JSON.parse(localStorage.getItem('f_v5') || '[]');
+        ml.innerHTML = friends.map(f => `<span onclick="setTarget('${f.cid}', '${f.name}')" style="cursor:pointer; border:1px solid #333; padding:1px 3px; margin-right:4px;">${f.name}</span>`).join('');
     }
+
+    window.setTarget = (id, name) => {
+        selectedId = id;
+        stTarget.innerText = name.toUpperCase();
+        if(!localStorage.getItem('wt_n')) localStorage.setItem('wt_n', prompt("Ditt namn?"));
+    };
     render();
 </script>
 </body>
