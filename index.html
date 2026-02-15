@@ -23,114 +23,80 @@
             justify-content: center;
             height: 100vh;
             margin: 0;
-            font-family: 'Inter', -apple-system, sans-serif;
+            font-family: 'Inter', sans-serif;
+            color: white;
         }
 
-        /* SJÄLVA ENHETEN */
         .walkie-talkie {
             width: 320px;
             background: var(--case-bg);
             border-radius: 45px;
             padding: 30px;
-            box-shadow: 25px 25px 50px #d1d1d1, -10px -10px 30px #ffffff;
+            box-shadow: 20px 20px 40px rgba(0,0,0,0.5);
             position: relative;
             border: 1px solid #111;
         }
 
-        /* GRÅA SIDOKNAPPAR/PUNKT-DEKORATION */
-        .side-dot {
-            width: 14px;
-            height: 14px;
-            background: #e0e0e0;
-            border-radius: 50%;
-            position: absolute;
-            left: 25px;
-            box-shadow: inset 1px 1px 3px rgba(0,0,0,0.5);
-        }
+        .side-dot { width: 14px; height: 14px; background: #e0e0e0; border-radius: 50%; position: absolute; left: 25px; box-shadow: inset 1px 1px 3px rgba(0,0,0,0.5); }
         .dot-top { top: 60px; }
         .dot-mid { top: 180px; }
 
-        /* HÖGTALARGRILL (Små hål) */
-        .speaker-grill {
-            display: grid;
-            grid-template-columns: repeat(4, 6px);
-            gap: 6px;
-            position: absolute;
-            left: 50px;
-        }
-        .grill-top { top: 90px; }
-        .grill-main { top: 210px; grid-template-columns: repeat(5, 6px); }
-        .hole { width: 5px; height: 5px; background: #111; border-radius: 50%; box-shadow: inset 0 1px 1px #000; }
-
-        /* LCD SKÄRM */
         .screen {
             background: var(--lcd-bg);
             margin: 20px 0 20px 40px;
             border-radius: 12px;
             padding: 15px;
-            height: 110px;
+            height: 140px;
             border: 4px solid #1a1a1a;
             color: var(--lcd-text);
             font-family: 'Courier New', monospace;
             font-size: 0.75rem;
             box-shadow: inset 0 0 15px #000;
-            overflow: hidden;
-            line-height: 1.4;
-        }
-
-        .screen-line { margin-bottom: 4px; overflow: hidden; white-space: nowrap; border-right: 2px solid transparent; }
-
-        /* KONTAKTHANTERING INNE PÅ SKÄRMEN */
-        .contact-ui { margin-top: 10px; display: flex; gap: 4px; }
-        .contact-ui input { background: #1a1a1a; border: 1px solid #333; color: var(--lcd-text); font-size: 0.6rem; padding: 3px; width: 40%; outline: none; }
-        .contact-ui button { background: #333; color: white; border: none; font-size: 0.7rem; cursor: pointer; border-radius: 3px; }
-
-        /* DEN STORA RÖDA KNAPPEN */
-        .talk-container {
             display: flex;
-            justify-content: flex-end;
-            margin-top: 20px;
-            margin-right: 10px;
+            flex-direction: column;
         }
 
-        .btn-talk {
-            width: 110px;
-            height: 110px;
-            background: radial-gradient(circle, var(--btn-red-glow) 0%, var(--btn-red) 100%);
-            border-radius: 50%;
-            border: 8px solid #000;
-            color: white;
-            font-weight: 900;
-            font-size: 1.1rem;
-            letter-spacing: 1px;
-            cursor: pointer;
+        #miniList { 
+            display: flex; 
+            flex-direction: column;
+            gap: 5px; 
+            margin-top: 8px; 
+            overflow-y: auto; 
+            flex-grow: 1;
+        }
+
+        .contact-row {
             display: flex;
             align-items: center;
-            justify-content: center;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.4), inset 0 4px 6px rgba(255,255,255,0.3);
-            transition: all 0.1s;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
+            justify-content: space-between;
+            border-bottom: 1px solid #1a1a1a;
+            padding-bottom: 2px;
         }
 
-        .btn-talk:active, .btn-talk.active {
-            transform: scale(0.95);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.6);
-            background: radial-gradient(circle, #39ff14 0%, #1a8a2a 100%);
-        }
+        .contact-name { cursor: pointer; flex-grow: 1; text-transform: uppercase; }
+        .contact-name:hover { color: #fff; }
 
-        /* TEXT UNDER ENHETEN */
-        .footer-text {
-            margin-top: 40px;
-            text-align: center;
-            color: #1f1f1f;
-        }
-        .footer-text h2 { font-family: monospace; letter-spacing: 4px; font-size: 1.8rem; margin-bottom: 5px; }
-        .footer-text p { font-size: 0.9rem; color: #666; }
+        .action-btns { display: flex; gap: 5px; }
+        .action-btns button { background: none; border: 1px solid var(--lcd-text); color: var(--lcd-text); font-size: 0.55rem; cursor: pointer; padding: 1px 4px; border-radius: 2px; }
+        .action-btns button.del { border-color: #ff3333; color: #ff3333; }
 
-        .init-overlay {
-            width: 100%; height: 100%; background: var(--green); color: black; font-weight: bold; border-radius: 10px; cursor: pointer; border: none; margin-bottom: 10px;
+        .contact-ui { margin-top: 5px; display: flex; gap: 4px; border-top: 1px solid #1a1a1a; padding-top: 8px; }
+        .contact-ui input { background: #000; border: 1px solid #333; color: var(--lcd-text); font-size: 0.6rem; padding: 3px; width: 35%; outline: none; }
+        .contact-ui button { background: #333; color: white; border: none; font-size: 0.7rem; cursor: pointer; padding: 2px 8px; border-radius: 2px; }
+
+        .talk-container { display: flex; justify-content: flex-end; margin-top: 20px; margin-right: 10px; }
+        .btn-talk {
+            width: 110px; height: 110px;
+            background: radial-gradient(circle, var(--btn-red-glow) 0%, var(--btn-red) 100%);
+            border-radius: 50%; border: 8px solid #000; cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4); transition: all 0.1s;
         }
+        .btn-talk.active { transform: scale(0.96); background: radial-gradient(circle, #39ff14 0%, #1a8a2a 100%); }
+
+        .speaker-grill { display: grid; grid-template-columns: repeat(4, 6px); gap: 6px; position: absolute; left: 50px; }
+        .grill-top { top: 90px; }
+        .grill-main { top: 210px; grid-template-columns: repeat(5, 6px); }
+        .hole { width: 5px; height: 5px; background: #111; border-radius: 50%; box-shadow: inset 0 1px 1px #000; }
     </style>
 </head>
 <body>
@@ -145,22 +111,23 @@
         </div>
 
         <div class="screen">
-            <button id="initBtn" style="width:100%; background:var(--lcd-text); color:black; border:none; font-weight:bold; cursor:pointer; font-size:0.7rem; padding:2px;">ANSLUT SYSTEM</button>
+            <button id="initBtn" style="width:100%; background:var(--lcd-text); color:black; border:none; font-weight:bold; cursor:pointer; font-size:0.7rem; padding:4px; margin-bottom:5px; border-radius:4px;">ANSLUT SYSTEM</button>
+            <div style="font-size: 0.6rem; opacity: 0.8; margin-bottom: 5px;">ID: <span id="stMyCode">------</span></div>
             <div id="stDisplay">
-                <div class="screen-line">STATUS: <span id="stStatus">OFFLINE</span></div>
-                <div class="screen-line">ID: <span id="stMyCode">------</span></div>
-                <div class="screen-line">TARGET: <span id="stTarget">NONE</span></div>
+                <div>SYS: <span id="stStatus">OFFLINE</span></div>
+                <div>TO: <span id="stTarget">NONE</span></div>
             </div>
+            
+            <div id="miniList"></div>
+
             <div class="contact-ui">
-                <input type="text" id="n" placeholder="Namn">
-                <input type="number" id="c" placeholder="Kod">
+                <input type="text" id="n" placeholder="NAMN">
+                <input type="number" id="c" placeholder="KOD">
                 <button onclick="addFriend()">ADD</button>
             </div>
-            <div id="miniList" style="font-size: 0.55rem; margin-top: 5px; opacity: 0.7; height: 20px; overflow: hidden;"></div>
         </div>
 
         <div class="speaker-grill grill-main">
-            <div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div>
             <div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div>
             <div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div><div class="hole"></div>
         </div>
@@ -170,21 +137,15 @@
         </div>
     </div>
 
-    <div class="footer-text">
-        <h2>WALKIE-TALKIE</h2>
-        <p>Instant tap-to-talk communication.</p>
-    </div>
-
 <script>
     let myStream, peer, selectedId, dataConn;
     const stStatus = document.getElementById('stStatus');
-    const stMyCode = document.getElementById('stMyCode');
     const stTarget = document.getElementById('stTarget');
     const talkBtn = document.getElementById('talkBtn');
 
     let myCode = localStorage.getItem('wt_c') || Math.floor(100000 + Math.random() * 900000).toString();
     localStorage.setItem('wt_c', myCode);
-    stMyCode.innerText = myCode;
+    document.getElementById('stMyCode').innerText = myCode;
 
     document.getElementById('initBtn').onclick = async function() {
         try {
@@ -210,8 +171,16 @@
 
     peer.on('connection', conn => {
         conn.on('data', data => {
-            if (data.type === 'ON') {
-                stStatus.innerText = "INCOMING...";
+            if (data.type === 'PING') {
+                if ("Notification" in window && Notification.permission === "granted") {
+                    new Notification("Walkie Talkie", { body: data.from + " anropar!" });
+                }
+                stStatus.innerText = "RINGING...";
+                stTarget.innerText = data.from.toUpperCase();
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                setTimeout(() => { stStatus.innerText = "ONLINE"; }, 3000);
+            } else if (data.type === 'ON') {
+                stStatus.innerText = "RX ACTIVE";
                 stTarget.innerText = data.from.toUpperCase();
             } else {
                 stStatus.innerText = "ONLINE";
@@ -219,15 +188,24 @@
         });
     });
 
+    function sendPing(id, name) {
+        const conn = peer.connect('live-' + id);
+        conn.on('open', () => {
+            conn.send({ type: 'PING', from: localStorage.getItem('wt_n') || "USER" });
+            stStatus.innerText = "SENT PING";
+            setTimeout(() => { stStatus.innerText = "ONLINE"; }, 2000);
+        });
+    }
+
     function start() {
         if(!selectedId || !myStream) return;
         talkBtn.classList.add('active');
+        stStatus.innerText = "TX LIVE";
         peer.call('live-' + selectedId, myStream);
         dataConn = peer.connect('live-' + selectedId);
         dataConn.on('open', () => {
             dataConn.send({type: 'ON', from: localStorage.getItem('wt_n') || 'USER'});
         });
-        stStatus.innerText = "SENDING...";
     }
 
     function stop() {
@@ -248,23 +226,40 @@
         const name = document.getElementById('n').value;
         const cid = document.getElementById('c').value;
         if(name && cid) {
-            let f = JSON.parse(localStorage.getItem('f_v5') || '[]');
+            let f = JSON.parse(localStorage.getItem('f_v7') || '[]');
             f.push({name, cid});
-            localStorage.setItem('f_v5', JSON.stringify(f));
+            localStorage.setItem('f_v7', JSON.stringify(f));
+            document.getElementById('n').value = '';
+            document.getElementById('c').value = '';
             render();
         }
     }
 
+    function deleteFriend(index) {
+        let f = JSON.parse(localStorage.getItem('f_v7') || '[]');
+        f.splice(index, 1);
+        localStorage.setItem('f_v7', JSON.stringify(f));
+        render();
+    }
+
     function render() {
         const ml = document.getElementById('miniList');
-        const friends = JSON.parse(localStorage.getItem('f_v5') || '[]');
-        ml.innerHTML = friends.map(f => `<span onclick="setTarget('${f.cid}', '${f.name}')" style="cursor:pointer; border:1px solid #333; padding:1px 3px; margin-right:4px;">${f.name}</span>`).join('');
+        const friends = JSON.parse(localStorage.getItem('f_v7') || '[]');
+        ml.innerHTML = friends.map((f, i) => `
+            <div class="contact-row">
+                <span class="contact-name" onclick="setTarget('${f.cid}', '${f.name}')">${f.name}</span>
+                <div class="action-btns">
+                    <button onclick="sendPing('${f.cid}', '${f.name}')">RING</button>
+                    <button class="del" onclick="deleteFriend(${i})">X</button>
+                </div>
+            </div>
+        `).join('');
     }
 
     window.setTarget = (id, name) => {
         selectedId = id;
         stTarget.innerText = name.toUpperCase();
-        if(!localStorage.getItem('wt_n')) localStorage.setItem('wt_n', prompt("Ditt namn?"));
+        if(!localStorage.getItem('wt_n')) localStorage.setItem('wt_n', prompt("Ditt namn?") || "USER");
     };
     render();
 </script>
