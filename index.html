@@ -46,7 +46,7 @@
             margin: 20px 0 20px 40px;
             border-radius: 12px;
             padding: 15px;
-            height: 140px;
+            height: 160px; /* Lite högre för att rymma det stora ID:t */
             border: 4px solid #1a1a1a;
             color: var(--lcd-text);
             font-family: 'Courier New', monospace;
@@ -54,6 +54,17 @@
             box-shadow: inset 0 0 15px #000;
             display: flex;
             flex-direction: column;
+        }
+
+        /* STORT ID NUMMER */
+        #stMyCode { 
+            display: block;
+            font-size: 1.4rem; 
+            font-weight: bold; 
+            letter-spacing: 2px;
+            margin: 2px 0 8px 0;
+            color: #fff;
+            text-shadow: 0 0 8px var(--lcd-text);
         }
 
         #miniList { 
@@ -73,7 +84,7 @@
             padding-bottom: 2px;
         }
 
-        .contact-name { cursor: pointer; flex-grow: 1; text-transform: uppercase; }
+        .contact-name { cursor: pointer; flex-grow: 1; text-transform: uppercase; font-size: 0.7rem; }
         .contact-name:hover { color: #fff; }
 
         .action-btns { display: flex; gap: 5px; }
@@ -95,7 +106,7 @@
 
         .speaker-grill { display: grid; grid-template-columns: repeat(4, 6px); gap: 6px; position: absolute; left: 50px; }
         .grill-top { top: 90px; }
-        .grill-main { top: 210px; grid-template-columns: repeat(5, 6px); }
+        .grill-main { top: 230px; grid-template-columns: repeat(5, 6px); }
         .hole { width: 5px; height: 5px; background: #111; border-radius: 50%; box-shadow: inset 0 1px 1px #000; }
     </style>
 </head>
@@ -112,8 +123,11 @@
 
         <div class="screen">
             <button id="initBtn" style="width:100%; background:var(--lcd-text); color:black; border:none; font-weight:bold; cursor:pointer; font-size:0.7rem; padding:4px; margin-bottom:5px; border-radius:4px;">ANSLUT SYSTEM</button>
-            <div style="font-size: 0.6rem; opacity: 0.8; margin-bottom: 5px;">ID: <span id="stMyCode">------</span></div>
-            <div id="stDisplay">
+            
+            <div style="font-size: 0.55rem; opacity: 0.7;">DIN KOD:</div>
+            <span id="stMyCode">------</span>
+            
+            <div id="stDisplay" style="border-top: 1px solid #1a1a1a; padding-top: 5px;">
                 <div>SYS: <span id="stStatus">OFFLINE</span></div>
                 <div>TO: <span id="stTarget">NONE</span></div>
             </div>
