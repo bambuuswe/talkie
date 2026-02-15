@@ -2,163 +2,189 @@
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI & Friend Walkie-Talkie</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cross-Platform Walkie-Talkie</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { --bg: #0f0f0f; --panel: #1e1e1e; --accent: #ff3b30; --green: #28cd41; --ai: #8e44ad; }
-        body { background: var(--bg); color: white; font-family: 'Inter', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .device { width: 340px; background: var(--panel); padding: 25px; border-radius: 45px; border: 4px solid #333; box-shadow: 0 25px 50px rgba(0,0,0,0.6); }
-        .my-id-box { background: #000; padding: 10px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #444; text-align: center; }
-        .my-id-box span { color: var(--green); font-family: monospace; font-size: 1.2rem; font-weight: bold; }
+        body { background: var(--bg); color: white; font-family: -apple-system, system-ui, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; overflow: hidden; }
+        
+        .device { width: 90%; max-width: 340px; background: var(--panel); padding: 25px; border-radius: 45px; border: 4px solid #333; box-shadow: 0 25px 50px rgba(0,0,0,0.6); position: relative; }
+        
+        .my-id-box { background: #000; padding: 12px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #444; text-align: center; }
+        .my-id-box span { color: var(--green); font-family: monospace; font-size: 1.4rem; font-weight: bold; letter-spacing: 2px; }
+
         .screen { background: #000; height: 100px; border-radius: 12px; margin: 15px 0; padding: 15px; color: #0f0; font-family: monospace; font-size: 0.85rem; overflow-y: auto; border: 1px solid #333; }
-        .contacts { background: #252525; border-radius: 15px; padding: 10px; max-height: 150px; overflow-y: auto; margin-bottom: 15px; }
-        .contact-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #333; cursor: pointer; font-size: 0.9rem; align-items: center; }
-        .contact-item.ai-bot { color: #bb86fc; font-weight: bold; border-left: 3px solid var(--ai); padding-left: 10px; }
-        .add-friend { display: flex; gap: 5px; margin-bottom: 15px; }
-        input { background: #333; border: 1px solid #444; color: white; padding: 8px; border-radius: 5px; flex-grow: 1; font-size: 0.8rem; }
-        button { background: var(--green); border: none; color: white; padding: 8px 12px; border-radius: 5px; cursor: pointer; }
-        .btn-talk { width: 100px; height: 100px; background: var(--accent); border-radius: 50%; border: 6px solid #800; cursor: pointer; margin: 10px auto; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 6px 0 #600; user-select: none; }
-        .btn-talk:active { transform: translateY(4px); box-shadow: 0 2px 0 #600; }
-        .btn-talk.active { background: var(--green); border-color: #1a8a2a; box-shadow: 0 6px 0 #13661f; }
+
+        .contacts { background: #252525; border-radius: 15px; padding: 5px; max-height: 140px; overflow-y: auto; margin-bottom: 15px; border: 1px solid #333; }
+        .contact-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #333; cursor: pointer; font-size: 0.9rem; }
+        .contact-item:last-child { border: none; }
+        .contact-item.selected { background: #333; border-radius: 10px; }
+        
+        .btn-talk { width: 120px; height: 120px; background: var(--accent); border-radius: 50%; border: 8px solid #800; cursor: pointer; margin: 10px auto; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
+        .btn-talk.active { background: var(--green); border-color: #1a8a2a; transform: scale(1.05); box-shadow: 0 0 20px var(--green); }
+        .btn-talk span { font-size: 0.8rem; margin-top: 5px; opacity: 0.8; }
+
+        .add-friend { display: flex; gap: 5px; }
+        input { background: #333; border: 1px solid #444; color: white; padding: 10px; border-radius: 8px; flex-grow: 1; }
+        button.add-btn { background: var(--green); border: none; color: white; padding: 10px; border-radius: 8px; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="device">
     <div class="my-id-box">
-        <div style="font-size: 0.7rem; color: #888;">DIN UNIKA KOD:</div>
+        <div style="font-size: 0.7rem; color: #888; margin-bottom: 4px;">DIN KOD</div>
         <span id="myId">------</span>
     </div>
 
-    <div class="screen" id="status">Välj en kontakt för att prata...</div>
+    <div class="screen" id="status">Klicka på en kontakt för att börja...</div>
 
     <div class="contacts" id="contactList">
-        <div class="contact-item ai-bot" onclick="selectAI()">
+        <div class="contact-item" id="aiItem" onclick="selectTarget('AI', this)" style="color: #bb86fc;">
             <span>🤖 AI COMPANION</span>
             <small>ONLINE</small>
         </div>
-        </div>
-
-    <div class="add-friend">
-        <input type="text" id="friendName" placeholder="Namn">
-        <input type="text" id="friendId" placeholder="Kod">
-        <button onclick="addFriend()">+</button>
     </div>
 
-    <div class="btn-talk" id="talkBtn">TALA</div>
+    <div class="add-friend">
+        <input type="text" id="fName" placeholder="Namn">
+        <input type="number" id="fId" placeholder="Kod">
+        <button class="add-btn" onclick="addFriend()">+</button>
+    </div>
+
+    <div class="btn-talk" id="talkBtn" onclick="toggleSpeech()">
+        <div id="talkLabel">TALA</div>
+        <span id="subLabel">Klicka för att starta</span>
+    </div>
 </div>
 
 <script>
-    let peer, conn;
-    let selectedTarget = null; // 'AI' eller PeerID
+    let peer, conn, selectedId = null;
+    let isRecording = false;
     const statusDiv = document.getElementById('status');
-    const contactList = document.getElementById('contactList');
+    const talkBtn = document.getElementById('talkBtn');
+    const talkLabel = document.getElementById('talkLabel');
+    const subLabel = document.getElementById('subLabel');
 
-    let savedId = localStorage.getItem('walkie_my_id') || Math.floor(100000 + Math.random() * 900000).toString();
-    localStorage.setItem('walkie_my_id', savedId);
+    // Initiera PeerJS med ett fast 6-siffrigt ID
+    let myCode = localStorage.getItem('wt_code') || Math.floor(100000 + Math.random() * 900000).toString();
+    localStorage.setItem('wt_code', myCode);
+    
+    peer = new Peer('wt-' + myCode);
+    peer.on('open', (id) => { 
+        document.getElementById('myId').innerText = myCode;
+        loadContacts();
+    });
 
-    peer = new Peer('wt-' + savedId);
-    peer.on('open', (id) => { document.getElementById('myId').innerText = savedId; renderContacts(); });
-    peer.on('connection', (connection) => { conn = connection; setupConnHandlers(); });
+    peer.on('connection', (c) => {
+        conn = c;
+        setupConn();
+    });
 
-    function selectAI() {
-        selectedTarget = 'AI';
-        statusDiv.innerText = "Ansluten till AI. Håll in knappen för att ställa en fråga.";
-        document.querySelectorAll('.contact-item').forEach(el => el.style.background = 'none');
-        document.querySelector('.ai-bot').style.background = '#331a4d';
-    }
-
-    async function callAI(text) {
-        statusDiv.innerText = "AI tänker...";
-        try {
-            // Vi använder en öppen API-endpoint för gratis modeller (t.ex. DuckDuckGo AI eller HuggingFace)
-            // Här kör vi en enkel fetch mot en publik proxy-tjänst
-            const response = await fetch('https://api.duckduckgo.com/lib/v1/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{role: 'user', content: text}] })
-            }).catch(() => null);
-
-            // Eftersom publika API:er ändras ofta, använder vi här en backup-metod ifall den oförutsedda servicen är nere
-            const aiMsg = "Jag är din AI-walkie talkie. Jag hörde dig säga: " + text;
-            statusDiv.innerText = "AI: " + aiMsg;
-            speak(aiMsg);
-        } catch(e) {
-            statusDiv.innerText = "AI-fel. Prova igen.";
-        }
+    function selectTarget(id, el) {
+        selectedId = id === 'AI' ? 'AI' : 'wt-' + id;
+        document.querySelectorAll('.contact-item').forEach(item => item.classList.remove('selected'));
+        el.classList.add('selected');
+        statusDiv.innerText = "Klar att prata med " + el.querySelector('span').innerText;
     }
 
     function addFriend() {
-        const name = document.getElementById('friendName').value;
-        const id = document.getElementById('friendId').value;
-        if (!name || id.length < 6) return;
-        let friends = JSON.parse(localStorage.getItem('walkie_friends') || '[]');
-        friends.push({ name, id });
-        localStorage.setItem('walkie_friends', JSON.stringify(friends));
-        renderContacts();
+        const name = document.getElementById('fName').value;
+        const id = document.getElementById('fId').value;
+        if(name && id.length === 6) {
+            let friends = JSON.parse(localStorage.getItem('wt_friends') || '[]');
+            friends.push({name, id});
+            localStorage.setItem('wt_friends', JSON.stringify(friends));
+            location.reload();
+        }
     }
 
-    function renderContacts() {
-        let friends = JSON.parse(localStorage.getItem('walkie_friends') || '[]');
-        const listItems = contactList.querySelectorAll('.contact-item:not(.ai-bot)');
-        listItems.forEach(i => i.remove());
+    function loadContacts() {
+        const friends = JSON.parse(localStorage.getItem('wt_friends') || '[]');
+        const list = document.getElementById('contactList');
         friends.forEach(f => {
             const div = document.createElement('div');
             div.className = 'contact-item';
             div.innerHTML = `<span>👤 ${f.name}</span> <small>${f.id}</small>`;
-            div.onclick = () => {
-                selectedTarget = 'wt-' + f.id;
-                statusDiv.innerText = "Vald: " + f.name;
-                document.querySelectorAll('.contact-item').forEach(el => el.style.background = 'none');
-                div.style.background = '#333';
-            };
-            contactList.appendChild(div);
+            div.onclick = () => selectTarget(f.id, div);
+            list.appendChild(div);
         });
     }
 
-    function setupConnHandlers() {
+    // Rösthantering
+    const recognition = new (window.webkitSpeechRecognition || window.SpeechRecognition)();
+    recognition.lang = 'sv-SE';
+    recognition.continuous = false;
+
+    function toggleSpeech() {
+        if (!selectedId) return alert("Välj någon att prata med först!");
+        
+        if (!isRecording) {
+            // Starta
+            isRecording = true;
+            talkBtn.classList.add('active');
+            talkLabel.innerText = "LYSSNAR...";
+            subLabel.innerText = "Klicka när du är klar";
+            statusDiv.innerText = "Sänder...";
+            recognition.start();
+        } else {
+            // Stoppa manuellt
+            stopRecording();
+        }
+    }
+
+    function stopRecording() {
+        isRecording = false;
+        talkBtn.classList.remove('active');
+        talkLabel.innerText = "TALA";
+        subLabel.innerText = "Klicka för att starta";
+        recognition.stop();
+    }
+
+    recognition.onresult = (event) => {
+        const text = event.results[0][0].transcript;
+        statusDiv.innerText = "Du sa: " + text;
+        
+        if (selectedId === 'AI') {
+            handleAI(text);
+        } else {
+            if (!conn || conn.peer !== selectedId) {
+                conn = peer.connect(selectedId);
+                setupConn();
+                setTimeout(() => { if(conn.open) conn.send({type:'VOICE', text}); }, 1000);
+            } else {
+                conn.send({type:'VOICE', text});
+            }
+        }
+        stopRecording();
+    };
+
+    function setupConn() {
         conn.on('data', (data) => {
-            if (data.type === 'VOICE') {
+            if(data.type === 'VOICE') {
                 statusDiv.innerText = "Vän: " + data.text;
                 speak(data.text);
             }
         });
     }
 
-    const recognition = new (window.webkitSpeechRecognition || window.SpeechRecognition)();
-    recognition.lang = 'sv-SE';
-
-    const talkBtn = document.getElementById('talkBtn');
-    talkBtn.onmousedown = () => {
-        if (!selectedTarget) return alert("Välj AI eller en vän först!");
-        talkBtn.classList.add('active');
-        recognition.start();
-    };
-
-    recognition.onresult = async (event) => {
-        const text = event.results[0][0].transcript;
-        statusDiv.innerText = "Du: " + text;
-        
-        if (selectedTarget === 'AI') {
-            callAI(text);
-        } else {
-            if (!conn || conn.peer !== selectedTarget) {
-                conn = peer.connect(selectedTarget);
-                setupConnHandlers();
-            }
-            setTimeout(() => { if(conn.open) conn.send({ type: 'VOICE', text: text }); }, 500);
-        }
-    };
-
-    talkBtn.onmouseup = () => { talkBtn.classList.remove('active'); recognition.stop(); };
+    function handleAI(text) {
+        statusDiv.innerText = "AI tänker...";
+        setTimeout(() => {
+            const responses = ["Jag förstår!", "Det låter intressant.", "Kan du berätta mer?", "Precis!", "Helt klart."];
+            const reply = "AI: " + responses[Math.floor(Math.random()*responses.length)] + " Du sa: " + text;
+            statusDiv.innerText = reply;
+            speak(reply);
+        }, 1000);
+    }
 
     function speak(text) {
-        const synth = window.speechSynthesis;
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'sv-SE';
-        synth.speak(utterance);
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'sv-SE';
+        window.speechSynthesis.speak(msg);
     }
 </script>
+
 </body>
 </html>
