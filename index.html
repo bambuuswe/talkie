@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Walkie-Talkie P2P</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        :root { --bg: #1a1a1a; --panel: #2d2d2d; --accent: #ff3b30; }
+        body { background: var(--bg); color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .device { width: 320px; background: var(--panel); padding: 25px; border-radius: 40px; border: 4px solid #444; text-align: center; }
+        .screen { background: #000; height: 100px; border-radius: 10px; margin: 15px 0; padding: 10px; font-family: monospace; color: #0f0; overflow-y: auto; font-size: 0.8rem; text-align: left; }
+        input, button { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: none; }
+        input { background: #444; color: white; }
+        .btn-talk { width: 100px; height: 100px; background: var(--accent); border-radius: 50%; border: 6px solid #800; cursor: pointer; margin: 20px auto; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 6px 0 #600; user-select: none; }
+        .btn-talk:active { transform: translateY(4px); box-shadow: 0 2px 0 #600; }
+        .friend-zone { margin-top: 20px; padding-top: 20px; border-top: 1px solid #444; }
+        .my-id { font-weight: bold; color: #00d4ff; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="device">
+        <div class="label">Din Vänkod (Klicka för att kopiera):</div>
+        <div id="myIdDisplay" class="my-id">Laddar ID...</div>
+        
+        <div class="screen" id="status">Väntar på anslutning...</div>
+
+        <div class="friend-zone">
+            <input type="text" id="friendIdInput" placeholder="Klistra in vänkoden här">
+            <button onclick="connectToFriend()" style="background: #007bff; color: white; cursor: pointer;">Koppla ihop</button>
+        </div>
+
+        <div class="btn-talk" id="talkBtn">TALA</div>
+        <p style="font-size: 0.7rem; color: #888;">Håll in för att sända röst & notis</p>
+    </div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const myIdDisplay = document.getElementById('myIdDisplay');
+        const talkBtn = document.getElementById('talkBtn');
+        let peer = new Peer(); // Skapar ett unikt ID för dig
+        let conn;
+
+        // 1. Setup - Hämta ditt ID
+        peer.on('open', (id) => {
+            myIdDisplay.innerText = id;
+            myIdDisplay.onclick = () => {
+                navigator.clipboard.writeText(id);
+                alert("Kod kopierad!");
+            };
+        });
+
+        // 2. Ta emot anslutning från vän
+        peer.on('connection', (connection) => {
+            conn = connection;
+            setupConnection();
+        });
+
+        // 3. Koppla till vän
+        function connectToFriend() {
+            const friendId = document.getElementById('friendIdInput').value;
+            conn = peer.connect(friendId);
+            setupConnection();
+        }
+
+        function setupConnection() {
+            conn.on('open', () => {
+                statusDiv.innerText = "Ansluten till vän!";
+                requestNotificationPermission();
+            });
+
+            conn.on('data', (data) => {
+                if (data.type === 'PINGER') {
+                    showNotification("Din vän vill prata!");
+                    statusDiv.innerText = "Vännen kallar...";
+                } else if (data.type === 'VOICE_TEXT') {
+                    statusDiv.innerText = "Vännen säger: " + data.text;
+                    speak(data.text);
+                }
+            });
+        }
+
+        // 4. Notiser
+        function requestNotificationPermission() {
+            if (Notification.permission !== "granted") {
+                Notification.requestPermission();
+            }
+        }
+
+        function showNotification(msg) {
+            if (Notification.permission === "granted") {
+                new Notification("Walkie Talkie", { body: msg, icon: "https://cdn-icons-png.flaticon.com/512/3616/3616230.png" });
+            }
+        }
+
+        // 5. Röst & Sändning
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'sv-SE';
+
+        talkBtn.onmousedown = () => {
+            if (!conn) return alert("Koppla ihop med en vän först!");
+            statusDiv.innerText = "Sänder notis & Lyssnar...";
+            conn.send({ type: 'PINGER' }); // Skickar "notis-ping"
+            recognition.start();
+        };
+
+        recognition.onresult = (event) => {
+            const text = event.results[0][0].transcript;
+            statusDiv.innerText = "Du sa: " + text;
+            conn.send({ type: 'VOICE_TEXT', text: text }); // Skickar texten till vännen
+        };
+
+        talkBtn.onmouseup = () => { recognition.stop(); };
+
+        function speak(text) {
+            const synth = window.speechSynthesis;
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'sv-SE';
+            synth.speak(utterance);
+        }
+    </script>
+</body>
+</html>
