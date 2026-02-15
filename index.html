@@ -3,203 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Live Walkie-Talkie Sync</title>
+    <title>Walkie Talkie Fix</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root { --bg: #0b0e11; --panel: #1c2128; --red: #ff3b30; --green: #28cd41; --blue: #58a6ff; }
+        :root { --bg: #0b0e11; --panel: #1c2128; --red: #ff3b30; --green: #28cd41; }
         body { background: var(--bg); color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .device { width: 90%; max-width: 320px; background: var(--panel); padding: 25px; border-radius: 40px; border: 3px solid #3d444d; text-align: center; }
-        .id-badge { background: #000; padding: 10px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #30363d; }
-        .id-badge span { color: var(--green); font-family: monospace; font-size: 1.5rem; font-weight: bold; }
-        
-        /* SKÄRMEN */
-        .status-screen { background: #0d1117; height: 70px; border-radius: 8px; margin: 15px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #30363d; overflow: hidden; }
-        #statusName { font-weight: bold; color: var(--blue); font-size: 1.1rem; }
-        #statusAction { font-size: 0.8rem; color: #8b949e; margin-top: 4px; }
-        
-        .visualizer { width: 100%; height: 5px; background: #222; margin-top: 5px; border-radius: 10px; overflow: hidden; }
-        #volBar { width: 0%; height: 100%; background: var(--green); transition: width 0.1s; }
-
-        .contact-list { background: #0d1117; border-radius: 12px; padding: 5px; margin-bottom: 15px; max-height: 120px; overflow-y: auto; text-align: left; border: 1px solid #30363d; }
-        .contact { padding: 10px; border-bottom: 1px solid #21262d; cursor: pointer; display: flex; justify-content: space-between; font-size: 0.9rem; }
-        .contact.active { background: #1f6feb; border-radius: 6px; }
-
+        .status-screen { background: #000; height: 80px; border-radius: 10px; margin: 15px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #333; }
+        #statusName { font-weight: bold; color: #58a6ff; }
         .btn-talk { 
-            width: 130px; height: 130px; background: var(--red); border-radius: 50%; 
-            border: 8px solid #8b1a1a; cursor: pointer; margin: 15px auto;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 1.1rem; transition: 0.2s; box-shadow: 0 8px 0 #611;
+            width: 140px; height: 140px; background: var(--red); border-radius: 50%; 
+            border: 8px solid #8b1a1a; cursor: pointer; margin: 20px auto;
+            display: flex; align-items: center; justify-content: center; font-weight: bold;
             user-select: none; -webkit-tap-highlight-color: transparent;
         }
-        .btn-talk.transmitting { background: var(--green); border-color: #1a6b2a; box-shadow: 0 0 25px var(--green); transform: scale(1.05); }
-
-        .setup-btn { background: #21262d; color: white; border: 1px solid #30363d; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; margin-bottom: 10px; font-weight: bold; }
-        .add-zone { display: flex; gap: 5px; }
-        .add-zone input { background: #0d1117; border: 1px solid #30363d; color: white; padding: 10px; border-radius: 8px; flex-grow: 1; font-size: 0.8rem; }
+        .btn-talk.active { background: var(--green); border-color: #1a6b2a; box-shadow: 0 0 20px var(--green); }
+        .contact { padding: 10px; border: 1px solid #333; margin: 5px 0; cursor: pointer; border-radius: 8px; }
+        .contact.selected { border-color: var(--green); background: #23863622; }
     </style>
 </head>
 <body>
 
 <div class="device">
-    <button class="setup-btn" id="micRequest">KLICKA FÖR ATT STARTA</button>
-
-    <div class="id-badge">
-        <div style="font-size: 0.6rem; color: #8b949e;">DIN KOD</div>
-        <span id="myId">------</span>
-    </div>
+    <h2 id="myIdDisplay">Kod: ------</h2>
+    <button id="startBtn" style="width:100%; padding:15px; background:var(--green); border:none; color:white; font-weight:bold; border-radius:10px; cursor:pointer;">1. AKTIVERA LJUD & MIC</button>
 
     <div class="status-screen">
-        <div id="statusName">Redo</div>
-        <div id="statusAction">Välj en kontakt</div>
-        <div class="visualizer"><div id="volBar"></div></div>
+        <div id="statusName">System offline</div>
+        <div id="statusAction">Klicka på gröna knappen</div>
     </div>
 
-    <div class="contact-list" id="contacts"></div>
-
-    <div class="add-zone">
-        <input type="text" id="fName" placeholder="Namn">
-        <input type="number" id="fId" placeholder="Kod">
-        <button onclick="addFriend()" style="background:var(--green); border:none; padding:10px; border-radius:8px; color:white;">+</button>
+    <div id="contactList"></div>
+    <div style="display:flex; gap:5px; margin-top:10px;">
+        <input type="text" id="fName" placeholder="Namn" style="width:60%; padding:5px;">
+        <input type="number" id="fId" placeholder="Kod" style="width:30%; padding:5px;">
+        <button onclick="addFriend()">+</button>
     </div>
 
-    <div class="btn-talk" id="talkBtn">HÅLL IN<br>TALA</div>
+    <div class="btn-talk" id="talkBtn">HÅLL IN</div>
 </div>
 
-<script>
-    let myPeerId = localStorage.getItem('wt_live_id') || Math.floor(100000 + Math.random() * 900000).toString();
-    localStorage.setItem('wt_live_id', myPeerId);
+<audio id="remoteAudio" autoplay></audio>
 
-    const peer = new Peer('live-' + myPeerId);
-    let myStream, selectedFriendId = null, activeCall, dataConn;
-    
-    const statusName = document.getElementById('statusName');
-    const statusAction = document.getElementById('statusAction');
-    const volBar = document.getElementById('volBar');
+<script>
+    let myStream, peer, currentCall, dataConn, selectedFriendId;
+    const remoteAudio = document.getElementById('remoteAudio');
     const talkBtn = document.getElementById('talkBtn');
 
-    // 1. Mikrofon & Audio Setup
-    document.getElementById('micRequest').onclick = async function() {
+    // Generera ID
+    let myCode = localStorage.getItem('wt_code') || Math.floor(100000 + Math.random() * 900000).toString();
+    localStorage.setItem('wt_code', myCode);
+    document.getElementById('myIdDisplay').innerText = "Kod: " + myCode;
+
+    // Starta Peer
+    peer = new Peer('live-' + myCode);
+
+    // 1. Viktigt: Aktivera mic OCH ljudmotor
+    document.getElementById('startBtn').onclick = async function() {
         try {
             myStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            // "Väck" ljudmotorn för mobilen
+            remoteAudio.play().catch(() => {}); 
             this.style.display = "none";
-            statusName.innerText = "Mikrofon OK";
-            startVisualizer(myStream);
-        } catch (err) { alert("Mikrofon nekad!"); }
+            document.getElementById('statusName').innerText = "Redo";
+            document.getElementById('statusAction').innerText = "Välj en vän";
+        } catch (e) { alert("Mic-fel: " + e); }
     };
 
-    peer.on('open', id => { document.getElementById('myId').innerText = myPeerId; renderContacts(); });
-
-    // 2. Ta emot samtal + Metadata (Namn)
+    // 2. Ta emot samtal
     peer.on('call', call => {
-        call.answer();
-        call.on('stream', remoteStream => {
-            const audio = new Audio();
-            audio.srcObject = remoteStream;
-            audio.play();
+        call.answer(myStream); // Vi skickar vår stream tillbaka direkt (duplex)
+        call.on('stream', stream => {
+            remoteAudio.srcObject = stream;
+            // Försök tvinga start på mobilen
+            remoteAudio.play();
         });
     });
 
+    // 3. Ta emot data (namn-synk)
     peer.on('connection', conn => {
         conn.on('data', data => {
-            if(data.type === 'START_TALK') {
-                statusName.innerText = data.fromName;
-                statusAction.innerText = "PRATAR...";
-            } else if(data.type === 'STOP_TALK') {
-                statusName.innerText = "Redo";
-                statusAction.innerText = "Väntar...";
+            if(data.type === 'START') {
+                document.getElementById('statusName').innerText = data.name;
+                document.getElementById('statusAction').innerText = "PRATAR...";
+            } else {
+                document.getElementById('statusName').innerText = "Redo";
+                document.getElementById('statusAction').innerText = "Väntar...";
             }
         });
     });
 
-    // 3. Tala-logik
-    talkBtn.onmousedown = startTransmitting;
-    talkBtn.onmouseup = stopTransmitting;
-    talkBtn.ontouchstart = (e) => { e.preventDefault(); startTransmitting(); };
-    talkBtn.ontouchend = stopTransmitting;
-
-    function startTransmitting() {
-        if (!myStream || !selectedFriendId) return;
+    // 4. Tala-logik
+    function startTalk() {
+        if(!selectedFriendId || !myStream) return;
+        talkBtn.classList.add('active');
+        talkBtn.innerText = "SÄNDER";
         
-        talkBtn.classList.add('transmitting');
-        statusName.innerText = "Du";
-        statusAction.innerText = "SÄNDER LIVE...";
-
-        // Skicka ljudet
-        activeCall = peer.call('live-' + selectedFriendId, myStream);
+        // Öppna röstkanal
+        currentCall = peer.call('live-' + selectedFriendId, myStream);
         
-        // Skicka metadata (att vi pratar)
-        const name = localStorage.getItem('wt_my_name') || "Vän";
+        // Öppna datakanal för att visa namnet
         dataConn = peer.connect('live-' + selectedFriendId);
         dataConn.on('open', () => {
-            dataConn.send({ type: 'START_TALK', fromName: name });
+            dataConn.send({type: 'START', name: localStorage.getItem('wt_my_name') || 'Vän'});
         });
     }
 
-    function stopTransmitting() {
-        talkBtn.classList.remove('transmitting');
-        statusName.innerText = "Redo";
-        statusAction.innerText = "Väntar...";
-        if (activeCall) activeCall.close();
-        if (dataConn) dataConn.send({ type: 'STOP_TALK' });
+    function stopTalk() {
+        talkBtn.classList.remove('active');
+        talkBtn.innerText = "HÅLL IN";
+        if(currentCall) currentCall.close();
+        if(dataConn) dataConn.send({type: 'STOP'});
     }
 
-    // 4. Ljudmätare (Visualizer)
-    function startVisualizer(stream) {
-        const audioContext = new AudioContext();
-        const analyser = audioContext.createAnalyser();
-        const microphone = audioContext.createMediaStreamSource(stream);
-        const javascriptNode = audioContext.createScriptProcessor(2048, 1, 1);
+    talkBtn.onmousedown = startTalk;
+    talkBtn.onmouseup = stopTalk;
+    talkBtn.ontouchstart = (e) => { e.preventDefault(); startTalk(); };
+    talkBtn.ontouchend = stopTalk;
 
-        analyser.smoothingTimeConstant = 0.8;
-        analyser.fftSize = 1024;
-        microphone.connect(analyser);
-        analyser.connect(javascriptNode);
-        javascriptNode.connect(audioContext.destination);
-
-        javascriptNode.onaudioprocess = () => {
-            const array = new Uint8Array(analyser.frequencyBinCount);
-            analyser.getByteFrequencyData(array);
-            let values = 0;
-            for (let i = 0; i < array.length; i++) { values += array[i]; }
-            const average = values / array.length;
-            volBar.style.width = Math.min(average * 2, 100) + "%";
-        };
-    }
-
+    // --- Kontakter ---
     function addFriend() {
         const name = document.getElementById('fName').value;
         const id = document.getElementById('fId').value;
         if(name && id) {
-            let friends = JSON.parse(localStorage.getItem('wt_live_friends') || '[]');
-            friends.push({name, id});
-            localStorage.setItem('wt_live_friends', JSON.stringify(friends));
-            renderContacts();
+            let f = JSON.parse(localStorage.getItem('f') || '[]');
+            f.push({name, id});
+            localStorage.setItem('f', JSON.stringify(f));
+            render();
         }
     }
 
-    function renderContacts() {
-        const friends = JSON.parse(localStorage.getItem('wt_live_friends') || '[]');
-        const list = document.getElementById('contacts');
+    function render() {
+        const list = document.getElementById('contactList');
         list.innerHTML = "";
-        friends.forEach(f => {
-            const div = document.createElement('div');
-            div.className = 'contact';
-            div.innerHTML = `<span>${f.name}</span> <small>${f.id}</small>`;
-            div.onclick = () => {
+        JSON.parse(localStorage.getItem('f') || '[]').forEach(f => {
+            const d = document.createElement('div');
+            d.className = 'contact';
+            d.innerHTML = f.name + " (" + f.id + ")";
+            d.onclick = () => {
                 selectedFriendId = f.id;
-                document.querySelectorAll('.contact').forEach(c => c.classList.remove('active'));
-                div.classList.add('active');
-                statusName.innerText = f.name;
-                statusAction.innerText = "Vald kontakt";
-                // Vi sparar ditt namn i appen för att skicka till andra
+                document.querySelectorAll('.contact').forEach(c => c.classList.remove('selected'));
+                d.classList.add('selected');
                 if(!localStorage.getItem('wt_my_name')) {
-                    const myName = prompt("Vad ska du heta hos dina vänner?");
-                    localStorage.setItem('wt_my_name', myName || "Okänd");
+                    localStorage.setItem('wt_my_name', prompt("Ditt namn?"));
                 }
             };
-            list.appendChild(div);
+            list.appendChild(d);
         });
     }
+    render();
 </script>
 </body>
 </html>
