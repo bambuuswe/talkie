@@ -3,138 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Siffer-Walkie</title>
+    <title>Pro Walkie-Talkie</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root { --bg: #121212; --accent: #ff3b30; }
-        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .device { width: 300px; background: #222; padding: 30px; border-radius: 50px; border: 4px solid #444; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.8); }
-        .screen { background: #000; height: 80px; border-radius: 10px; margin: 15px 0; padding: 10px; color: #0f0; font-family: monospace; font-size: 0.8rem; overflow: hidden; border: 1px solid #333; }
-        input { width: 80px; padding: 10px; font-size: 1.2rem; text-align: center; background: #333; color: white; border: 2px solid #555; border-radius: 10px; margin-bottom: 10px; }
-        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .btn-talk { width: 110px; height: 110px; background: var(--accent); border-radius: 50%; border: 6px solid #800; cursor: pointer; margin: 20px auto; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 6px 0 #600; user-select: none; }
+        :root { --bg: #0f0f0f; --panel: #1e1e1e; --accent: #ff3b30; --green: #28cd41; }
+        body { background: var(--bg); color: white; font-family: 'Inter', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        
+        .device { width: 340px; background: var(--panel); padding: 25px; border-radius: 45px; border: 4px solid #333; box-shadow: 0 25px 50px rgba(0,0,0,0.6); }
+        
+        .my-id-box { background: #000; padding: 10px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #444; }
+        .my-id-box span { color: var(--green); font-family: monospace; font-size: 1.2rem; font-weight: bold; }
+
+        .screen { background: #000; height: 80px; border-radius: 12px; margin: 15px 0; padding: 15px; color: #0f0; font-family: monospace; font-size: 0.85rem; overflow-y: auto; border: 1px solid #333; }
+
+        .contacts { background: #252525; border-radius: 15px; padding: 10px; max-height: 150px; overflow-y: auto; margin-bottom: 15px; }
+        .contact-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #333; cursor: pointer; font-size: 0.9rem; }
+        .contact-item:hover { background: #333; }
+
+        .add-friend { display: flex; gap: 5px; margin-bottom: 15px; }
+        input { background: #333; border: 1px solid #444; color: white; padding: 8px; border-radius: 5px; flex-grow: 1; font-size: 0.8rem; }
+        
+        button { background: var(--green); border: none; color: white; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+
+        .btn-talk { width: 100px; height: 100px; background: var(--accent); border-radius: 50%; border: 6px solid #800; cursor: pointer; margin: 10px auto; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 6px 0 #600; user-select: none; }
         .btn-talk:active { transform: translateY(4px); box-shadow: 0 2px 0 #600; }
-        .status-dot { width: 10px; height: 10px; background: gray; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        .online { background: #0f0; box-shadow: 0 0 10px #0f0; }
+        .btn-talk.active { background: var(--green); border-color: #1a8a2a; box-shadow: 0 6px 0 #13661f; }
     </style>
 </head>
 <body>
 
-    <div class="device">
-        <div style="font-size: 0.8rem; margin-bottom: 5px;">VÄLJ 4 SIFFROR:</div>
-        <input type="text" id="roomCode" maxlength="4" placeholder="0000">
-        <br>
-        <button onclick="startConnection()">ANSLUT</button>
-
-        <div class="screen" id="status">Skriv in 4 siffror och tryck anslut för att börja.</div>
-        
-        <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
-            <div id="dot" class="status-dot"></div>
-            <span id="connectionText" style="font-size: 0.7rem; color: #888;">Ej ansluten</span>
-        </div>
-
-        <div class="btn-talk" id="talkBtn">TALA</div>
+<div class="device">
+    <div class="my-id-box">
+        <div style="font-size: 0.7rem; color: #888;">DIN UNIKA KOD:</div>
+        <span id="myId">------</span>
     </div>
 
-    <script>
-        let peer, conn;
-        const statusDiv = document.getElementById('status');
-        const dot = document.getElementById('dot');
-        const connText = document.getElementById('connectionText');
-        const talkBtn = document.getElementById('talkBtn');
+    <div class="screen" id="status">Väntar på signal...</div>
 
-        function startConnection() {
-            const code = document.getElementById('roomCode').value;
-            if(code.length !== 4) return alert("Välj exakt 4 siffror!");
+    <div class="contacts" id="contactList">
+        </div>
 
-            // Vi lägger till ett prefix för att minska risken för krock med andra appar
-            const finalId = "vibe-walkie-" + code;
-            
-            peer = new Peer(finalId);
+    <div class="add-friend">
+        <input type="text" id="friendName" placeholder="Namn">
+        <input type="text" id="friendId" placeholder="6 siffror">
+        <button onclick="addFriend()">+</button>
+    </div>
 
-            peer.on('open', (id) => {
-                statusDiv.innerText = "Väntar på din vän (Kod: " + code + ")...";
-                requestNotificationPermission();
-            });
+    <div class="btn-talk" id="talkBtn">TALA</div>
+    <div style="text-align: center; font-size: 0.7rem; color: #666; margin-top: 10px;">Välj en vän i listan och håll in TALA</div>
+</div>
 
-            // När någon annan ringer upp dig
-            peer.on('connection', (connection) => {
-                conn = connection;
-                handleLogic();
-            });
+<script>
+    let peer, conn;
+    let selectedFriendId = null;
+    const statusDiv = document.getElementById('status');
+    const contactList = document.getElementById('contactList');
 
-            // Försök att ansluta (ifall vännen redan skapat rummet)
-            // Vi väntar lite så peer hinner starta
-            setTimeout(() => {
-                const friendConn = peer.connect(finalId); // Detta är lite förenklat, i verkligheten ansluter man till varandras unika id
-                // Men för P2P utan server är det bäst att ni båda har samma kod i tanken.
-            }, 500);
-            
-            // OBS: För att detta ska funka 100% smidigt behöver man ofta en "matchmaking"
-            // Men här kör vi på att den som trycker sist ansluter till den första.
-            // För att ansluta till en vän:
-            window.connectTo = (targetCode) => {
-                conn = peer.connect("vibe-walkie-" + targetCode);
-                handleLogic();
-            }
-        }
+    // 1. Generera ett unikt 6-siffrigt ID vid start
+    // Vi kollar om vi redan har ett sparat, annars skapar vi ett
+    let savedId = localStorage.getItem('walkie_my_id') || Math.floor(100000 + Math.random() * 900000).toString();
+    localStorage.setItem('walkie_my_id', savedId);
 
-        function handleLogic() {
-            conn.on('open', () => {
-                statusDiv.innerText = "KOPPLAD! Nu kan ni prata.";
-                dot.classList.add('online');
-                connText.innerText = "ONLINE";
-            });
+    peer = new Peer('wt-' + savedId);
 
-            conn.on('data', (data) => {
-                if (data.type === 'PING') {
-                    showNotification("Din vän vill prata!");
-                    statusDiv.innerText = "Inkommande anrop...";
-                } else if (data.type === 'VOICE') {
-                    statusDiv.innerText = "Vän: " + data.text;
-                    speak(data.text);
-                }
-            });
-        }
+    peer.on('open', (id) => {
+        document.getElementById('myId').innerText = savedId;
+        renderContacts();
+    });
 
-        // --- RÖST & NOTISER ---
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.lang = 'sv-SE';
+    // 2. Hantera inkommande anrop
+    peer.on('connection', (connection) => {
+        conn = connection;
+        setupConnHandlers();
+    });
 
-        talkBtn.onmousedown = () => {
-            if (!conn) {
-                // Om vi inte har en anslutning än, testa att ringa koden i rutan
-                const code = document.getElementById('roomCode').value;
-                conn = peer.connect("vibe-walkie-" + code);
-                handleLogic();
-                return;
+    // 3. Kontaktsystem (LocalStorage)
+    function addFriend() {
+        const name = document.getElementById('friendName').value;
+        const id = document.getElementById('friendId').value;
+        if (!name || id.length < 6) return alert("Ange namn och 6-siffrig kod!");
+
+        let friends = JSON.parse(localStorage.getItem('walkie_friends') || '[]');
+        friends.push({ name, id });
+        localStorage.setItem('walkie_friends', JSON.stringify(friends));
+        
+        document.getElementById('friendName').value = "";
+        document.getElementById('friendId').value = "";
+        renderContacts();
+    }
+
+    function renderContacts() {
+        let friends = JSON.parse(localStorage.getItem('walkie_friends') || '[]');
+        contactList.innerHTML = friends.length ? "" : "<div style='font-size:0.7rem;color:#666'>Inga vänner tillagda</div>";
+        friends.forEach(f => {
+            const div = document.createElement('div');
+            div.className = 'contact-item';
+            div.innerHTML = `<span>${f.name}</span> <small>${f.id}</small>`;
+            div.onclick = () => {
+                selectedFriendId = 'wt-' + f.id;
+                statusDiv.innerText = "Vald: " + f.name + ". Redo att sända.";
+                // Rensa markerade
+                document.querySelectorAll('.contact-item').forEach(el => el.style.background = 'none');
+                div.style.background = '#333';
             };
-            statusDiv.innerText = "Sänder...";
-            conn.send({ type: 'PING' });
-            recognition.start();
-        };
+            contactList.appendChild(div);
+        });
+    }
 
-        recognition.onresult = (event) => {
-            const text = event.results[0][0].transcript;
-            statusDiv.innerText = "Du: " + text;
-            conn.send({ type: 'VOICE', text: text });
-        };
-
-        talkBtn.onmouseup = () => { recognition.stop(); };
-
-        function speak(text) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'sv-SE';
-            window.speechSynthesis.speak(utterance);
-        }
-
-        function requestNotificationPermission() {
+    function setupConnHandlers() {
+        conn.on('open', () => {
+            statusDiv.innerText = "Ansluten till vän!";
             if (Notification.permission !== "granted") Notification.requestPermission();
+        });
+
+        conn.on('data', (data) => {
+            if (data.type === 'PING') {
+                new Notification("Walkie Talkie", { body: "Inkommande röstmeddelande..." });
+                statusDiv.innerText = "Hörs nu...";
+            } else if (data.type === 'VOICE') {
+                statusDiv.innerText = "Vän: " + data.text;
+                const utterance = new SpeechSynthesisUtterance(data.text);
+                utterance.lang = 'sv-SE';
+                window.speechSynthesis.speak(utterance);
+            }
+        });
+    }
+
+    // 4. Tala-logik
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = 'sv-SE';
+
+    const talkBtn = document.getElementById('talkBtn');
+    
+    talkBtn.onmousedown = () => {
+        if (!selectedFriendId) return alert("Välj en vän i listan först!");
+        
+        // Om vi inte redan är kopplade till just denna vän, koppla nu
+        if (!conn || conn.peer !== selectedFriendId) {
+            conn = peer.connect(selectedFriendId);
+            setupConnHandlers();
         }
 
-        function showNotification(msg) {
-            if (Notification.permission === "granted") new Notification("Walkie Talkie", { body: msg });
-        }
-    </script>
+        talkBtn.classList.add('active');
+        statusDiv.innerText = "Sänder...";
+        if(conn.open) conn.send({ type: 'PING' });
+        recognition.start();
+    };
+
+    recognition.onresult = (event) => {
+        const text = event.results[0][0].transcript;
+        statusDiv.innerText = "Du: " + text;
+        if(conn && conn.open) conn.send({ type: 'VOICE', text: text });
+    };
+
+    talkBtn.onmouseup = () => {
+        talkBtn.classList.remove('active');
+        recognition.stop();
+    };
+</script>
+
 </body>
 </html>
