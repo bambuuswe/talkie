@@ -3,120 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Walkie Talkie FINAL</title>
+    <title>Walkie Talkie med Notiser</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { background: #0b0e11; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .box { width: 300px; background: #1c2128; padding: 20px; border-radius: 30px; border: 2px solid #3d444d; text-align: center; }
-        .screen { background: #000; padding: 15px; border-radius: 10px; margin: 10px 0; color: #58a6ff; font-family: monospace; border: 1px solid #333; min-height: 40px; }
+        :root { --bg: #0b0e11; --panel: #1c2128; --blue: #58a6ff; --green: #28cd41; }
+        body { background: var(--bg); color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .box { width: 300px; background: var(--panel); padding: 25px; border-radius: 35px; border: 2px solid #3d444d; text-align: center; }
+        .screen { background: #000; padding: 15px; border-radius: 12px; margin: 10px 0; border: 1px solid #333; min-height: 50px; }
+        #stName { font-weight: bold; color: var(--blue); font-size: 1.2rem; }
+        
         .btn-talk { 
             width: 120px; height: 120px; background: #ff3b30; border-radius: 50%; border: 6px solid #8b1a1a;
-            cursor: pointer; margin: 20px auto; display: flex; align-items: center; justify-content: center;
-            font-weight: bold; user-select: none; -webkit-tap-highlight-color: transparent; box-shadow: 0 5px 0 #611;
+            cursor: pointer; margin: 15px auto; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; user-select: none; box-shadow: 0 5px 0 #611;
         }
-        .btn-talk.active { background: #28cd41; border-color: #1a6b2a; box-shadow: 0 0 20px #28cd41; transform: translateY(3px); }
-        .contact { padding: 8px; border: 1px solid #444; margin: 5px 0; cursor: pointer; border-radius: 5px; font-size: 0.8rem; }
-        .contact.selected { border-color: #28cd41; background: #23863622; }
-        button.main { width: 100%; padding: 12px; background: #28cd41; border: none; color: white; font-weight: bold; border-radius: 8px; cursor: pointer; }
+        .btn-talk.active { background: var(--green); border-color: #1a6b2a; box-shadow: 0 0 20px var(--green); transform: translateY(3px); }
+
+        .contact { padding: 10px; border: 1px solid #444; margin: 5px 0; cursor: pointer; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .contact.selected { border-color: var(--green); background: #23863622; }
+        
+        .ring-btn { background: #21262d; border: 1px solid #444; color: #f0f6fc; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; }
+        .ring-btn:hover { background: #30363d; }
+        
+        .main-btn { width: 100%; padding: 12px; background: var(--green); border: none; color: white; font-weight: bold; border-radius: 10px; cursor: pointer; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
 <div class="box">
-    <button class="main" id="initBtn">1. STARTA SYSTEMET</button>
+    <button class="main-btn" id="initBtn">1. STARTA & TILLÅT NOTISER</button>
     <h3 id="displayCode">Kod: ---</h3>
 
     <div class="screen">
         <div id="stName">OFFLINE</div>
-        <div id="stAction" style="font-size: 0.7rem; color: #8b949e;">Tryck start</div>
+        <div id="stAction" style="font-size: 0.7rem; color: #8b949e;">Väntar på start...</div>
     </div>
 
     <div id="list"></div>
-    <div style="margin-top:10px; display:flex; gap:2px;">
-        <input type="text" id="n" placeholder="Namn" style="width:50%">
-        <input type="text" id="c" placeholder="Kod" style="width:30%">
-        <button onclick="add()">+</button>
+    <div style="margin-top:10px; display:flex; gap:5px;">
+        <input type="text" id="n" placeholder="Namn" style="width:50%; padding:8px; border-radius:5px; border:1px solid #444; background:#0d1117; color:white;">
+        <input type="text" id="c" placeholder="Kod" style="width:30%; padding:8px; border-radius:5px; border:1px solid #444; background:#0d1117; color:white;">
+        <button onclick="add()" style="padding:8px; border-radius:5px; border:none; background:var(--green); color:white; cursor:pointer;">+</button>
     </div>
 
     <div class="btn-talk" id="talk">TALA</div>
 </div>
 
 <script>
-    let myStream, peer, selectedId, activeConn;
+    let myStream, peer, selectedId, dataConn;
     const stName = document.getElementById('stName');
     const stAction = document.getElementById('stAction');
     const talkBtn = document.getElementById('talk');
 
     let code = localStorage.getItem('wt_c') || Math.floor(100000 + Math.random() * 900000).toString();
     localStorage.setItem('wt_c', code);
-    document.getElementById('displayCode').innerText = "Din Kod: " + code;
+    document.getElementById('displayCode').innerText = "Kod: " + code;
 
-    // 1. Tvinga användaren att interagera för att låsa upp AUDIO
+    // 1. Initiera Systemet + Be om notis-tillstånd
     document.getElementById('initBtn').onclick = async function() {
         try {
+            // Aktivera Mikrofon
             myStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            
+            // Be om notis-tillstånd
+            if (Notification.permission !== "granted") {
+                await Notification.requestPermission();
+            }
+
             this.style.display = "none";
             stName.innerText = "ONLINE";
-            stAction.innerText = "Välj kontakt";
+            stAction.innerText = "Redo att ta emot samtal";
             
-            // "Väck" ljudet genom att skapa en tyst kontext
+            // Lås upp ljudmotorn
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             ctx.resume();
-        } catch (e) { alert("Mic saknas!"); }
+        } catch (e) { alert("Fel vid start: " + e); }
     };
 
     peer = new Peer('live-' + code);
 
-    // 2. Ta emot ljud
+    // 2. Hantera Inkommande Samtal (Ljud)
     peer.on('call', call => {
-        stAction.innerText = "INKOMMANDE...";
-        call.answer(); // Vi behöver inte skicka vår stream tillbaka förrän vi trycker
+        call.answer();
         call.on('stream', stream => {
             const audio = new Audio();
             audio.srcObject = stream;
-            audio.play().catch(e => console.error("Auto-play blockad", e));
-            
-            // Uppdatera skärmen när vi faktiskt får ljud
+            audio.play();
             stAction.innerText = "HÖRS I HÖGTALARE";
         });
     });
 
-    // Ta emot metadata (namn)
+    // 3. Hantera Inkommande Data (Notiser/Namn)
     peer.on('connection', conn => {
         conn.on('data', data => {
-            if(data.type === 'ON') { 
-                stName.innerText = data.name; 
-                stAction.innerText = "SÄNDER..."; 
-            } else { 
-                stName.innerText = "ONLINE"; 
-                stAction.innerText = "Väntar..."; 
+            if (data.type === 'PING') {
+                showNotification(data.from + " vill prata!");
+                stName.innerText = data.from;
+                stAction.innerText = "RINGER...";
+                // Spela ett litet ljud om du vill här
+            } else if (data.type === 'ON') {
+                stName.innerText = data.from;
+                stAction.innerText = "SÄNDER LIVE...";
+            } else if (data.type === 'OFF') {
+                stName.innerText = "ONLINE";
+                stAction.innerText = "Väntar...";
             }
         });
     });
 
-    // 3. Tala-funktion
-    async function start() {
+    // 4. Skicka Notis (Ringa)
+    function sendPing(friendId, friendName) {
+        const conn = peer.connect('live-' + friendId);
+        conn.on('open', () => {
+            conn.send({
+                type: 'PING',
+                from: localStorage.getItem('wt_n') || "En vän"
+            });
+            stAction.innerText = "Notis skickad till " + friendName;
+        });
+    }
+
+    function showNotification(text) {
+        if (Notification.permission === "granted") {
+            new Notification("Walkie Talkie", {
+                body: text,
+                icon: "https://cdn-icons-png.flaticon.com/512/3616/3616230.png"
+            });
+        }
+    }
+
+    // 5. Tala-funktion
+    function start() {
         if(!selectedId || !myStream) return;
         talkBtn.classList.add('active');
+        peer.call('live-' + selectedId, myStream);
         
-        // Ring upp
-        const call = peer.call('live-' + selectedId, myStream);
-        activeConn = peer.connect('live-' + selectedId);
-        activeConn.on('open', () => {
-            activeConn.send({type: 'ON', name: localStorage.getItem('wt_n') || 'Vän'});
+        dataConn = peer.connect('live-' + selectedId);
+        dataConn.on('open', () => {
+            dataConn.send({type: 'ON', from: localStorage.getItem('wt_n') || 'Vän'});
         });
-        
-        stName.innerText = "DU";
-        stAction.innerText = "SÄNDER LIVE...";
     }
 
     function stop() {
         talkBtn.classList.remove('active');
-        stName.innerText = "ONLINE";
-        stAction.innerText = "Klar";
-        // Vi stänger inte peer, bara datanotan
-        if(activeConn) activeConn.send({type: 'OFF'});
-        // För att spara batteri/data stänger vi callen
+        if(dataConn) dataConn.send({type: 'OFF'});
         peer._connections.forEach(connList => {
             connList.forEach(c => { if(c.type === 'media') c.close(); });
         });
@@ -127,6 +157,7 @@
     talkBtn.ontouchstart = (e) => { e.preventDefault(); start(); };
     talkBtn.ontouchend = stop;
 
+    // --- Kontaktlista ---
     function add() {
         const name = document.getElementById('n').value;
         const cid = document.getElementById('c').value;
@@ -144,7 +175,7 @@
         JSON.parse(localStorage.getItem('f') || '[]').forEach(f => {
             const d = document.createElement('div');
             d.className = 'contact';
-            d.innerHTML = f.name + " (" + f.cid + ")";
+            d.innerHTML = `<span>${f.name}</span><button class="ring-btn" onclick="event.stopPropagation(); sendPing('${f.cid}', '${f.name}')">RING</button>`;
             d.onclick = () => {
                 selectedId = f.cid;
                 document.querySelectorAll('.contact').forEach(c => c.classList.remove('selected'));
